@@ -13,9 +13,11 @@
 #include "setup_error.h"
 
 #include "third_party/cpptoml.h"
-#include "third_party/fmt/format.h"
+#include <fmt/format.h>
 
-#include "spdlog/sinks/file_sinks.h"
+#include "spdlog/sinks/basic_file_sink.h"
+#include "spdlog/sinks/daily_file_sink.h"
+#include "spdlog/sinks/rotating_file_sink.h"
 #include "spdlog/sinks/null_sink.h"
 #include "spdlog/sinks/sink.h"
 #include "spdlog/sinks/stdout_sinks.h"
@@ -626,7 +628,7 @@ inline auto level_to_str(const spdlog::level::level_enum level) -> std::string {
     } else if (level == lv::off) {
         return "off";
     } else {
-        throw setup_error(format("Invalid level enum '{}' provided", level));
+        throw setup_error(format("Invalid level enum '{}' provided", (int)level));
     }
 }
 
@@ -804,7 +806,7 @@ syslog_sink_from_table(const std::shared_ptr<cpptoml::table> &sink_table)
     const auto syslog_facility = value_from_table_or<int32_t>(
         sink_table, SYSLOG_FACILITY, DEFAULT_SYSLOG_FACILITY);
 
-    return make_shared<syslog_sink>(ident, syslog_option, syslog_facility);
+    return make_shared<spdlog::sinks::syslog_sink< spdlog::details::null_mutex> >(ident, syslog_option, syslog_facility);
 }
 
 #endif
@@ -823,8 +825,8 @@ inline auto sink_from_sink_type(
     using spdlog::sinks::null_sink_st;
     using spdlog::sinks::rotating_file_sink_mt;
     using spdlog::sinks::rotating_file_sink_st;
-    using spdlog::sinks::simple_file_sink_mt;
-    using spdlog::sinks::simple_file_sink_st;
+    using spdlog::sinks::basic_file_sink_mt;
+    using spdlog::sinks::basic_file_sink_st;
     using spdlog::sinks::sink;
     using spdlog::sinks::stdout_sink_mt;
     using spdlog::sinks::stdout_sink_st;
@@ -854,10 +856,10 @@ inline auto sink_from_sink_type(
         return make_shared<color_stdout_sink_mt>();
 
     case sink_type::SimpleFileSinkSt:
-        return simple_file_sink_from_table<simple_file_sink_st>(sink_table);
+        return simple_file_sink_from_table<basic_file_sink_st>(sink_table);
 
     case sink_type::SimpleFileSinkMt:
-        return simple_file_sink_from_table<simple_file_sink_mt>(sink_table);
+        return simple_file_sink_from_table<basic_file_sink_mt>(sink_table);
 
     case sink_type::RotatingFileSinkSt:
         return rotating_file_sink_from_table<rotating_file_sink_st>(sink_table);

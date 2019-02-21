@@ -5,7 +5,7 @@
  */
 
 #define CATCH_CONFIG_MAIN
-#include "catch.hpp"
+#include <catch2/catch.hpp>
 
 #if defined(unix) || defined(__unix__) || defined(__unix)
 #ifndef SPDLOG_ENABLE_SYSLOG
