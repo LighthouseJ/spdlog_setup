@@ -18,12 +18,20 @@ class SpdlogsetupConan(ConanFile):
             'enable_syslog=False'
         )
     generators = "cmake"
-    exports = "CMakeLists.txt"
+    exports = "CMakeLists.txt", "src/*", "cmake/*"
 
     requires = (
         "spdlog/1.3.1@bincrafters/stable",
         "Catch2/2.6.1@catchorg/stable"
     )
+
+    def source(self):
+#        source_url = "https://github.com/LighthouseJ/spdlog_setup"
+#        tools.get("{0}/archive/{1}.tar.gz".format(source_url, self.version))
+#        extracted_dir = self.name + "-" + self.version
+#        os.rename(extracted_dir, self.source_subfolder)
+        git = tools.Git(folder=self.source_folder)
+        git.clone("https://github.com/LighthouseJ/spdlog_setup.git", "spdlog_upgrade_and_conanization")
 
     def build(self):
         cmake = None
