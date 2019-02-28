@@ -18,53 +18,35 @@ class SpdlogsetupConan(ConanFile):
             'enable_syslog=False'
         )
     generators = "cmake"
-    exports = "CMakeLists.txt", "src/*", "cmake/*"
 
     requires = (
         "spdlog/1.3.1@bincrafters/stable",
         "Catch2/2.6.1@catchorg/stable"
     )
 
+    source_dir_name = 'spdlog_setup-' + version
+
     def source(self):
-        git = tools.Git(folder=self.source_folder)
-        git.clone("https://github.com/LighthouseJ/spdlog_setup.git", "conanize_spdlog_setup")
+        tools.download("https://github.com/guangie88/spdlog_setup/archive/v%s.tar.gz" % (self.version), 
+                    "spdlog_setup_v%s.tar.gz" % (self.version) )
+        tools.untargz("spdlog_setup_v%s.tar.gz" % (self.version) )
+
+        tools.replace_in_file("%s/CMakeLists.txt" % (self.source_dir_name), "project(spdlog_setup VERSION 0.3.0 LANGUAGES CXX)",
+        '''project(spdlog_setup VERSION 0.3.0 LANGUAGES CXX)
+           include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
+           conan_basic_setup()''')
+
+        tools.replace_in_file("%s/CMakeLists.txt" % (self.source_dir_name), 'set(SPDLOG_MIN_VERSION "0.14.0")', 'set(SPDLOG_MIN_VERSION "1.0.0")')
 
     def build(self):
-        cmake = None
-        if self.settings.os == 'Linux':
-            cmake_eclipse_version = None
-
-            try:
-                cmake_eclipse_version = os.environ['CMAKE_ECLIPSE_VERSION']
-            except KeyError:
-                self.output.info('If developing on Linux and using Eclise CDT, define \\$CMAKE_ECLIPSE_VERSION to generate Eclipse project files')
-
-            if cmake_eclipse_version != None:
-                self.output.info('Configuring for Eclipse project generation using Eclipse Version %s' % ( cmake_eclipse_version ) )
-                # Generates regular makefiles, but also Eclipse CDT4 project files
-                cmake = CMake(self, generator='Eclipse CDT4 - Unix Makefiles')
-                # Defines a recent and sufficient Eclipse version to include preprocessor defines, etc...
-                cmake.definitions['CMAKE_ECLIPSE_VERSION'] = cmake_eclipse_version
-            else: # assume default construction
-                cmake = CMake(self)
-        else: # assume default construction
-            cmake = CMake(self)
-
+        cmake = CMake(self)
         cmake.definitions['THREADS_PREFER_PTHREAD_FLAG'] = self.options.threads_prefer_pthread_flag
         cmake.definitions['SPDLOG_ENABLE_SYSLOG'] = self.options.enable_syslog
-        cmake.configure()
+        cmake.configure(source_folder=self.source_dir_name)
         cmake.build()
-        cmake.test()
-
-        # Explicit way:
-        # self.run('cmake %s/hello %s'
-        #          % (self.source_folder, cmake.command_line))
-        # self.run("cmake --build . %s" % cmake.build_config)
+        # no test phase
+        cmake.install()
 
     def package(self):
-        self.copy("*.h", dst="include", src="hello")
-        self.copy("*hello.lib", dst="lib", keep_path=False)
-        self.copy("*.dll", dst="bin", keep_path=False)
-        self.copy("*.so", dst="lib", keep_path=False)
-        self.copy("*.dylib", dst="lib", keep_path=False)
-        self.copy("*.a", dst="lib", keep_path=False)
+        # relies on the install target to install headers and cmake pkgconfig-style files
+        pass
